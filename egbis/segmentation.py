@@ -31,30 +31,35 @@ def segmentation(filename, k=10):
 #     return distances
 
 
-def compute_distances(image):
+def grid_intensity_distances(image):
+    return compute_distances(image, grid_neighbours, intensity_diff)
+
+
+def compute_distances(image, neighbours, metric):
     n, m = image.shape
     size = n * m
-    distances = np.ones((size, size)) * np.inf
-    distances[np.diag_indices(size)] = 0
+    distances = np.zeros((size, size))
 
     for i in range(size):
-        for j in range(i + 1, size - 1):
-            print(i, j)
+        for j in range(i + 1, size):
+            pix1 = i // m, i % m
+            pix2 = j // m, j % m
+            if neighbours(pix1, pix2):
+                distances[i, j] = metric(image[pix1], image[pix2])
+
+    distances += distances.T
+    distances[distances == 0] = np.inf
+    distances[np.diag_indices(size)] = 0
+    return distances
 
 
-def intensity(x, y):
+def intensity_diff(x, y):
     return abs(x - y)
 
 
-def grid_neighbours(i, j, shape):
-    n, m = shape
-    deltas = -1, 0, 1
-    for dx, dy in product(deltas, deltas):
-        if dx == dy == 0:
-            continue
-        nx, ny = i + dx, j + dy
-        if (0 <= nx < n) and (0 <= ny < m):
-            yield nx, ny
+def grid_neighbours(pix1, pix2):
+    (x1, y1), (x2, y2) = pix1, pix2
+    return abs(x1 - x2) <= 1 and abs(y1 - y2) <= 1
 
 
 def main():
